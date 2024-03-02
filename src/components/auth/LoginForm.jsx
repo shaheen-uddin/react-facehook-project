@@ -2,19 +2,47 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import Field from "../common/Field";
 import { useNavigate } from "react-router-dom";
+import useAuth from "../../hooks/useAuth";
+import axios from "axios";
 
 export default function LoginForm() {
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setError,
   } = useForm();
 
  const navigate = useNavigate();
+ const { setAuth } = useAuth();
 
-  const submitForm = (data) => {
-    console.log(data);
-    navigate("/");
+  const submitForm = async (data) => {
+   // console.log(`${import.meta.env.VITE_SERVER_BASE_URL}/auth/login`);
+    try {
+      const response =  await axios.post(`${import.meta.env.VITE_SERVER_BASE_URL}/auth/login`,data);
+      if(response.status === 200){
+        const { token, user} = response.data;
+        if(token){
+          const authToken = token.token;
+          const refreshToken = token.refreshToken;
+         // console.log(`Login time with token: ${authToken}`);
+        //  console.log(`refreshToker: ${authToken}`);
+          setAuth({user, authToken, refreshToken});
+          navigate("/");
+        }
+      }
+    } catch (err){
+    //  console.error(err);
+      setError("root.random", {
+        type: "random", 
+        message: `User with email ${data.email} is not found.`
+      })
+    }
+  //  console.log(data);
+  //make an api call
+  //will return Token and logged in user information
+    const user = {...data};
+   
   };
 
   return (
@@ -53,6 +81,7 @@ export default function LoginForm() {
         />
       </Field>
       {/*    <!-- Submit --> */}
+      <p>{errors.root?.random?.message}</p>
       <button
         className="auth-input bg-lwsGreen font-bold text-deepDark transition-all hover:opacity-90"
         type="submit"
