@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import useAuth from '../hooks/useAuth';
 import useAxios from '../hooks/useAxios';
+import useProfile from '../hooks/useProfile';
+import { actions } from '../actions';
+import ProfileInfo from '../components/profile/ProfileInfo';
+import MyPost from '../components/profile/MyPost';
 
 export default function ProfilePage() {
-  const [ user, setUser ] = useState(null);
-  const [ posts, setPosts ] = useState([]);
-  const [loading, setLoading ] = useState(false);
-  const [error, setError ] = useState(null);
+ const { state, dispatch } = useProfile();
 
   const { api } = useAxios();
   const { auth } = useAuth();
@@ -14,27 +15,29 @@ export default function ProfilePage() {
  // console.log(auth);
   useEffect(() => {
   //  console.log(`${import.meta.env.VITE_SERVER_BASE_URL}/profile/${auth?.user?.id}`);
-    setLoading(true);
+    dispatch({type: actions.profile.DATA_FETCHING});
     const fetchProfile = async () => {
       try {
         const response = await api.get(`${import.meta.env.VITE_SERVER_BASE_URL}/profile/${auth?.user?.id}`);
       //  console.log(response.data);
-        setUser(response?.data.user);
-        setPosts(response?.data?.posts);
+      if(response.status === 200){
+       // console.log(response.data);
+        dispatch({type: actions.profile.DATA_FETCHED, data: response.data});
+      }
+       
       } catch (err) {
         console.log(err);
-        setError(err);
-      } finally {
-        setLoading(false);
-      }
+        dispatch({type:actions.profile.DATA_FETCHED_ERROR, error: err.message})
+      } 
     };
     fetchProfile();
   }, []);
- console.log(user);
-  if(loading) return <div className='text-3xl font-semibold'>Loading profile...</div>
+
+  if(state?.loading) return <div className='text-3xl font-semibold'>Loading profile...</div>
   return (
-    <div className='text-xl font-semibold'>
-     Welcom,  {  user?.firstName } you have {posts?.length } posts.
-     </div>
+    <>
+      <ProfileInfo />
+      <MyPost />
+    </>
   )
 }
